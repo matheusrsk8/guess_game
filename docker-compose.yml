@@ -1,14 +1,14 @@
 version: '3.9'
-
+ 
 services:
   db:
     image: postgres
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
-      interval: 3s
+      interval: 5s
       retries: 5
-      start_period: 30s
+      start_period: 20s
     expose:
       - 5432
     environment:
@@ -16,13 +16,15 @@ services:
     networks:
       - network-backend
     volumes:
-      - my-db-backup:/var/lib/postgresql/data
-
-  backend1:
+      - db_data:/var/lib/postgresql/data
+ 
+  backend:
     build: .
+    deploy:
+      replicas: 3
     restart: always
     environment:
-      - FLASK_DB_HOST=db
+      - FLASK_DB_HOST db
     expose:
       - 5000
     networks:
@@ -31,21 +33,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-  
-  backend2:
-    build: .
-    restart: always
-    environment:
-      - FLASK_DB_HOST=db
-    expose:
-      - 5000
-    networks:
-      - network-backend
-      - network-frontend
-    depends_on:
-      db:
-        condition: service_healthy
-
+ 
   frontend:
     build:
       context: frontend
@@ -54,10 +42,11 @@ services:
       - 3000:80
     networks:
       - network-frontend
-
+      - network-backend
+ 
 networks:
   network-backend:
   network-frontend:
-
+ 
 volumes:
-  my-db-backup:
+  db_data:
